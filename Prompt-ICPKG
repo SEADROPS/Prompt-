@@ -1,0 +1,117 @@
+You are an expert in introductory programming education and curriculum analysis.
+
+Your task is to construct a Concept Knowledge Graph (CKG) from the
+provided introductory C programming curriculum.
+
+Analyze the curriculum and identify the programming concepts that students
+are expected to learn. Do not simply extract keywords. Identify meaningful
+instructional concepts and organize them according to their conceptual
+relationships.
+
+For each identified concept, provide the following information:
+
+1. Concept ID
+2. Concept name
+3. Parent concept or higher-level topic
+4. Sub-concepts, if applicable
+5. Prerequisite concepts
+6. Programming constructs associated with the concept
+7. Bloom's Taxonomy cognitive level
+8. A short description of the concept
+
+Use the following Bloom's Taxonomy levels:
+- Remember
+- Understand
+- Apply
+- Analyze
+- Evaluate
+- Create
+
+For programming constructs, use concrete constructs that can subsequently
+be detected from student source code. Examples include:
+
+VARIABLE,
+DATATYPE,
+ASSIGNMENT,
+COMPUTATION,
+INPUT,
+OUTPUT,
+IF,
+SWITCH,
+FOR,
+WHILE,
+DO_WHILE,
+BREAK,
+CONTINUE,
+FUNCTION_DEF,
+FUNCTION_CALL,
+RECURSION,
+ARRAY,
+POINTER,
+STRING,
+STRUCTURE,
+FILE_IO
+
+Do not create a separate curriculum concept merely because two constructs
+have different syntax. Group syntactically different constructs when they
+represent the same underlying programming concept.
+
+For example:
+- for, while, and do-while should be associated with the broader concept
+  of Iteration/Looping.
+- function definition and function call should be associated with the
+  broader concept of Functions.
+- different syntactic forms of input should be associated with the
+  Input/Output concept.
+
+However, preserve conceptually distinct ideas such as Arrays, Pointers,
+Recursion, Functions, and Iteration as separate concepts when they represent
+different learning objectives.
+
+Identify prerequisite relationships carefully. A prerequisite relationship
+A -> B means that knowledge of A is required or strongly supports learning B.
+
+For each prerequisite relationship, provide:
+Source Concept -> Target Concept
+
+The resulting representation should be suitable for constructing a directed
+Concept Knowledge Graph in which:
+- nodes represent programming concepts;
+- edges represent prerequisite or hierarchical relationships;
+- node attributes contain Bloom's level and associated programming
+  constructs.
+
+Avoid extracting concepts that are merely mentioned incidentally in the
+curriculum and are not intended learning objectives.
+
+Do not infer concepts that have no reasonable basis in the provided
+curriculum.
+
+Return the result in the following format.
+
+CONCEPTS
+
+| Concept ID | Concept Name | Parent Concept | Sub-concepts | Bloom Level | Programming Constructs | Description |
+|------------|--------------|----------------|--------------|-------------|------------------------|-------------|
+
+PREREQUISITE RELATIONSHIPS
+
+| Source Concept | Target Concept | Relationship |
+|----------------|---------------|--------------|
+
+CONCEPT HIERARCHY
+
+Parent Concept
+    -> Child Concept
+        -> Sub-concept
+
+Finally, provide a JSON representation containing:
+
+{
+  "concepts": [...],
+  "relationships": [...],
+  "hierarchy": [...]
+}
+
+Use only information supported by the supplied curriculum.
+Do not provide explanations outside the requested output format.
