@@ -1,0 +1,74 @@
+import os
+
+os.environ["OPENAI_API_KEY"] = "YOUR_API_KEY"
+
+from openai import OpenAI
+import json
+
+
+def llm_extract_concepts_gpt41(
+    syllabus_text,
+    prompt_file="/content/ckg_extraction_prompt.txt"
+):
+
+    with open(prompt_file, "r", encoding="utf-8") as f:
+        prompt_template = f.read()
+
+    final_prompt = prompt_template + "\n\n" + syllabus_text
+
+    client = OpenAI()
+
+    response = client.responses.create(
+        model="gpt-4.1",
+        input=final_prompt
+    )
+
+    response_text = response.output_text.strip()
+
+    try:
+        ckg_json = json.loads(response_text)
+    except json.JSONDecodeError:
+        if response_text.startswith("```"):
+            response_text = response_text.replace("```json", "")
+            response_text = response_text.replace("```", "")
+            response_text = response_text.strip()
+
+        ckg_json = json.loads(response_text)
+
+    concepts = {}
+
+    for concept in ckg_json["concepts"]:
+
+        concept_id = concept["id"]
+        concept_name = concept["name"]
+
+        concepts[concept_id] = {
+            "name": concept_name,
+            "parent": concept.get("parent"),
+            "sub_concepts": concept.get("sub_concepts", []),
+            "prerequisites": concept.get("prerequisites", []),
+            "constructs": concept.get(
+                "programming_constructs", []
+            ),
+            "bloom": concept.get(
+                "bloom_level",
+                "Understand"
+            ),
+            "description": concept.get(
+                "description",
+                ""
+            )
+        }
+
+    print("\n[GPT-4.1 Extracted Concept KG]")
+
+    for concept_id, info in concepts.items():
+
+        print(
+            f"{concept_id} | "
+            f"{info['name']} | "
+            f"Bloom={info['bloom']} | "
+            f"Constructs={info['constructs']}"
+        )
+
+    return concepts
