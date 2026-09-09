@@ -1,0 +1,139 @@
+ef visit_FuncCall(self, node):
+        fname = node.name.name if isinstance(node.name, c_ast.ID) else "FuncCall"
+
+        if fname in INPUT_FUNCS:
+            role = "INPUT"
+        elif fname in OUTPUT_FUNCS:
+            role = "OUTPUT"
+        elif fname in FILE_FUNCS:
+            role = "FILEIO"
+        else:
+            role = "FUNCTION_CALL"
+
+        self.add_node(fname, role)
+
+        # recursion detection
+        if self.current_function and fname == self.current_function:
+            self.add_node("RECURSION", "RECURSION")
+
+        if self.current_function:
+            self.sdg.append((self.current_function, fname))
+            self.srg.append((self.current_function, fname))
+
+        self.generic_visit(node)
+
+    def visit_Compound(self, node):
+        for stmt in node.block_items or []:
+            self.visit(stmt)
+
+    def visit_Return(self, node):
+        self.add_node("RETURN", "RETURN")
+
+        if self.last_stmt:
+            self.cfg.append((self.last_stmt, "RETURN"))
+
+        self.last_stmt = "RETURN"
+        self.generic_visit(node)
+
+    def visit_If(self, node):
+        self.add_node("CONTROL_FLOW", "CONTROL_FLOW")
+
+        if self.last_stmt:
+            self.cfg.append((self.last_stmt, "CONTROL_FLOW"))
+
+        self.last_stmt = "CONTROL_FLOW"
+
+    
+        self.visit(node.cond)
+        self.visit(node.iftrue)
+        if node.iffalse:
+            self.visit(node.iffalse)
+
+    def visit_BinaryOp(self, node):
+        self.dfg.append(("operand", "result"))
+        self.generic_visit(node)
+
+    def visit_ID(self, node):
+        self.add_node(node.name, "VARIABLES")
+
+    
+    def generic_visit(self, node):
+        self.ast_nodes.append(type(node).__name__)
+        super().generic_visit(node)
+
+    
+    def finalize(self):
+        self.pdg = list(set(self.cfg + self.dfg))
+        self.sdg = list(set(self.sdg + self.pdg))
+
+
+def extract_program_kg(code: str, title="PROGRAM"):
+    parser = c_parser.CParser()
+    ast = parser.parse(code)
+
+    kg = ProgramKG()
+    kg.visit(ast)
+    kg.finalize()
+
+    print(f"\n===== {title} =====")
+
+    print("\n[AST Nodes]")
+    print(sorted(set(kg.ast_nodes)))
+
+    print("\n[CFG Edges]")
+    print(kg.cfg)
+
+    print("\n[DFG Edges]")
+    print(kg.dfg)
+
+    print("\n[PDG Edges]")
+    print(kg.pdg)
+
+    print("\n[SDG Edges]")
+    print(kg.sdg)
+
+    print("\n[Semantic Role Graph (SRG)]")
+    print(kg.srg)
+
+    print("\n[Program Construct Nodes]")
+    for n, d in kg.G.nodes(data=True):
+        print(f"{n} → {d['role']}")
+
+    return kg
+def draw_program_kg(program_kg, filename="program_KG.png"):
+    G = program_kg.G
+
+    
+    function_nodes = [n for n, d in G.nodes(data=True) if d['role'] == "FUNCTION_DEF"]
+    variable_nodes = [n for n, d in G.nodes(data=True) if d['role'] == "VARIABLES"]
+    other_nodes = [n for n in G.nodes() if n not in function_nodes + variable_nodes]
+
+    pos = {}
+
+    
+    for i, n in enumerate(function_nodes):
+        pos[n] = (0, i)
+
+    for i, n in enumerate(variable_nodes):
+        pos[n] = (1, i)
+
+    for i, n in enumerate(other_nodes):
+        pos[n] = (2, i)
+
+    plt.figure(figsize=(12, 8))
+
+    nx.draw_networkx_nodes(G, pos, nodelist=function_nodes, node_size=2000)
+    nx.draw_networkx_nodes(G, pos, nodelist=variable_nodes, node_size=2000)
+    nx.draw_networkx_nodes(G, pos, nodelist=other_nodes, node_size=2000)
+
+    nx.draw_networkx_labels(G, pos, font_size=10)
+
+    nx.draw_networkx_edges(G, pos)
+
+    plt.title("Program Knowledge Graph (Structured)")
+    plt.axis("off")
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
+    plt.show()
+
+    print(f" Program KG saved: {filename}")
